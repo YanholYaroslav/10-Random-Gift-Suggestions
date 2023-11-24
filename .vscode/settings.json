@@ -1,0 +1,12 @@
+{
+    "java.project.referencedLibraries": [
+        "lib/**/*.jar",
+        "src\\lib\\javax.mail.jar",
+        "src\\lib\\activation.jar"
+    ],
+    "java.project.sourcePaths": [
+        "src",
+        "src\\lib",
+        "."
+    ]
+}
