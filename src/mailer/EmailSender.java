@@ -47,16 +47,15 @@ public class EmailSender {
         } catch (NoSuchProviderException e) {
             System.err.println("Error while connecting to email provider: " 
                     + e.getMessage());
-            return false;  // Return false in case of any exception
+            return false;
         } catch (MessagingException e) {
             System.err.println("Error while sending email: " + e.getMessage());
-            return false;  // Return false in case of any exception
+            return false;
         }
 
-        // For now, simulate the email sending process
         System.out.println("Email sent to: " + recipientEmail);
         System.out.println("Subject: " + subject);
         System.out.println("Content: " + content);
-        return true;  // Simulate a successful email sending
+        return true;
     }
 }

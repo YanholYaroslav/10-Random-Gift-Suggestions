@@ -1,7 +1,17 @@
 package greetings;
 
+import java.io.*;
+import java.net.HttpURLConnection;
+import java.net.URI;
+import java.net.URL;
+import java.net.URLEncoder;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+
+import calendar.Event;
+import friendshipdb.Friend;
 
 /**
  * A class responsible for generating personalized greetings and 
@@ -25,22 +35,107 @@ public class GreetingsGenerator {
         greetingsTemplates.put("birthday", "Happy Birthday, %s! Wishing you a fantastic day filled with joy and laughter.");
         greetingsTemplates.put("anniversary", "Congratulations on your %s anniversary! May your love continue to grow.");
         greetingsTemplates.put("general", "Hello, %s! Sending warm wishes your way.");
-        // Add more templates for different occasions as needed
+        // more templates for different occasions
+    }
+
+
+    private String ChatGPTAPI(String prompt) {
+        String urlToOpenai = "https://api.openai.com/v1/chat/completions";
+        // The clear account is used, no worries this time
+        String apiKey = "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";
+        String model = "gpt-3.5-turbo";
+
+        try {
+
+            URI uri = new URI(urlToOpenai);
+            URL url = uri.toURL();
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("POST");
+            connection.setRequestProperty("Authorization", "Bearer " + apiKey);
+            connection.setRequestProperty("Content-Type", "application/json");
+
+            // URL encode the prompt
+            String encodedPrompt = URLEncoder.encode(prompt, "UTF-8");
+
+            // The request body
+            String body = "{\"model\": \"" + model + "\", \"messages\": [{\"role\": \"user\", \"content\": \"" + encodedPrompt + "\"}]}";
+            connection.setDoOutput(true);
+
+            try (OutputStreamWriter writer = new OutputStreamWriter(connection.getOutputStream())) {
+                writer.write(body);
+            }
+
+            // Response from ChatGPT
+            int responseCode = connection.getResponseCode();
+
+            if (responseCode == HttpURLConnection.HTTP_OK) {
+                try (BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
+                    String line;
+                    StringBuilder response = new StringBuilder();
+
+                    while ((line = br.readLine()) != null) {
+                        response.append(line);
+                    }
+
+                    // Calls the method to extract the message.
+                    return extractMessageFromJSONResponse(response.toString());
+                }
+            } else {
+                throw new RuntimeException("HTTP Request Failed with response code: " + responseCode);
+            }
+
+        } catch (Exception e) {
+            throw new RuntimeException("An error occurred during the API request", e);
+        }
+    }
+
+    private String extractMessageFromJSONResponse(String response) {
+        int start = response.indexOf("content") + 11;
+        int end = response.indexOf("\"", start);
+        return response.substring(start, end);
     }
 
     /**
-     * Generates a personalized greeting based on the occasion and 
-     * recipient's name.
+     * Generates a greeting for a specific event.
      *
-     * @param occasion The occasion for the greeting (e.g., 
-     * "birthday", "anniversary", "general").
-     * @param name     The recipient's name.
-     * @return Personalized greeting.
+     * @param friendInfo Information about the friend associated with the event.
+     * @param eventInfo  Information about the event.
+     * @return Generated greeting.
      */
-    public String generateGreeting(String occasion, String name) {
-        String template = greetingsTemplates.getOrDefault(occasion.toLowerCase(), greetingsTemplates.get("general"));
-        return String.format(template, name);
+    public String generateGreeting(String friendInfo, String eventInfo) {
+        String promptString = "Don't use any formating symbols. Don't assign author name. Assume the occasion. Generate a greeting for the friend based on: Friend Info: " + friendInfo + "\n" + "Event Info: " + eventInfo + "\n";
+        
+        return ChatGPTAPI(promptString);
     }
+
+    /**
+     * Generates greetings for a list of events.
+     *
+     * @param events List of events.
+     * @return List of generated greetings.
+     */
+    public List<String> generateGreetings(List<Event> events, List<Friend> friends) {
+
+        List<String> generatedGreetings = new ArrayList<>();
+
+        for (Event event : events) {
+
+            int friendId = event.getFriendId();
+            String friendInfo = friends.get(friendId).toString();
+            String eventInfo = event.toString();
+
+            // Generate greeting for the current event
+            String greeting = generateGreeting(friendInfo, eventInfo);
+
+            // Add the generated greeting to the list
+            generatedGreetings.add(greeting);
+        }
+
+        return generatedGreetings;
+
+    }
+
+
 
     /**
      * Selects an appropriate gift based on the occasion.

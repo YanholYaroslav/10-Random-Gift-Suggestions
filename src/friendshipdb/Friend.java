@@ -15,9 +15,13 @@ public class Friend implements Serializable {
     private int id;               // Unique ID
     private String firstName;      // First name
     private String lastName;       // Last name
-    private String contactNumber;  // Phone number
+    private String patronymic;     // Middle name
     private String email;          // Email
+    private String gender;         // Gender (male or female)
+    private int age;               // Age in years
+    private String contactNumber;  // Phone number
     private String website;        // Website
+    private String zodiacSign;     // Zodiac sign
 
     /**
      * Constructor for the Friend class.
@@ -25,18 +29,27 @@ public class Friend implements Serializable {
      * @param id             Unique ID of the friend.
      * @param firstName      First name of the friend.
      * @param lastName       Last name of the friend.
+     * @param patronymic     Patronymic of the friend.
      * @param contactNumber  Phone number of the friend.
      * @param email          Email of the friend.
      * @param website        Website of the friend.
+     * @param gender         Gender of the friend (male or female).
+     * @param age            Age of the friend in years.
+     * @param zodiacSign     Zodiac sign of the friend.
      */
-    public Friend(int id, String firstName, String lastName, String contactNumber, 
-            String email, String website) {
+    public Friend(int id, String firstName, String lastName, String patronymic,
+                  String contactNumber, String email, String website,
+                  String gender, int age, String zodiacSign) {
         this.id = id;
         this.firstName = firstName;
         this.lastName = lastName;
+        this.patronymic = patronymic;
         this.contactNumber = contactNumber;
         this.email = email;
         this.website = website;
+        this.gender = gender;
+        this.age = age;
+        this.zodiacSign = zodiacSign;
     }
 
     // Getters and setters
@@ -150,6 +163,78 @@ public class Friend implements Serializable {
     }
 
     /**
+     * Get the middle name of the friend.
+     *
+     * @return Middle name of the friend.
+     */
+    public String getMiddleName() {
+        return patronymic;
+    }
+
+    /**
+     * Set the middle name of the friend.
+     *
+     * @param middleName Middle name of the friend.
+     */
+    public void setMiddleName(String patronymic) {
+        this.patronymic = patronymic;
+    }
+
+    /**
+     * Get the gender of the friend.
+     *
+     * @return Gender of the friend.
+     */
+    public String getGender() {
+        return gender;
+    }
+
+    /**
+     * Set the gender of the friend.
+     *
+     * @param gender Gender of the friend.
+     */
+    public void setGender(String gender) {
+        this.gender = gender;
+    }
+
+    /**
+     * Get the age of the friend.
+     *
+     * @return Age of the friend.
+     */
+    public int getAge() {
+        return age;
+    }
+
+    /**
+     * Set the age of the friend.
+     *
+     * @param age Age of the friend.
+     */
+    public void setAge(int age) {
+        this.age = age;
+    }
+
+    /**
+     * Get the zodiac sign of the friend.
+     *
+     * @return Zodiac sign of the friend.
+     */
+    public String getZodiacSign() {
+        return zodiacSign;
+    }
+
+    /**
+     * Set the zodiac sign of the friend.
+     *
+     * @param zodiacSign Zodiac sign of the friend.
+     */
+    public void setZodiacSign(String zodiacSign) {
+        this.zodiacSign = zodiacSign;
+    }
+
+    /**
      * Overridden toString() method for easy printing of information 
      * about the object.
      *
@@ -161,9 +246,13 @@ public class Friend implements Serializable {
                 "id=" + id +
                 ", firstName='" + firstName + '\'' +
                 ", lastName='" + lastName + '\'' +
+                ", patronymic='" + patronymic + '\'' +
                 ", contactNumber='" + contactNumber + '\'' +
                 ", email='" + email + '\'' +
                 ", website='" + website + '\'' +
+                ", gender='" + gender + '\'' +
+                ", age=" + age +
+                ", zodiac='" + zodiacSign + '\'' +
                 '}';
     }
 

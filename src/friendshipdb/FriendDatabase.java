@@ -7,6 +7,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -23,81 +24,48 @@ public class FriendDatabase {
     }
 
     /**
-     * Adds a friend to the database.
-     *
-     * @param friend The friend to be added.
-     */
-    public void addFriend(Friend friend) {
-        friends.add(friend);
-    }
-
-    /**
-     * Removes a friend from the database.
-     *
-     * @param friend The friend to be removed.
-     * @return True if the friend was successfully removed, 
-     * false otherwise.
-     */
-    public boolean removeFriend(Friend friend) {
-        return friends.remove(friend);
-    }
-
-    /**
-     * Gets a list of all friends in the database.
-     *
-     * @return List of friends.
-     */
-    public List<Friend> getAllFriends() {
-        return new ArrayList<>(friends);
-    }
-
-    /**
      * Gets an available ID based on the current list of friends.
      *
      * @return An available ID.
      */
-    public int getFreeId() {
+    private int getFreeId() {
+        if (friends.isEmpty()) {
+            return 0; // Start with ID 0 if the list is empty
+        }
         int maxId = -1;
         for (Friend friend : friends) {
             int currentId = friend.getId();
-            if (currentId == maxId + 1) {
-                maxId = currentId;
-            }
-            else {
-                return maxId + 1;
-            }
+            maxId = Math.max(maxId, currentId);
         }
         return maxId + 1;
     }
 
     /**
-     * Finds and returns a friend with the specified ID.
+     * Adds a friend to the database with a new ID.
      *
-     * @param id The ID of the friend to find.
-     * @return The found friend or null if not found.
+     * @param friend The friend to be added.
      */
-    public Friend findFriendById(int id) {
-        for (Friend friend : friends) {
-            if (friend.getId() == id) {
-                return friend;
-            }
-        }
-        return null;
+    public void addFriend(Friend friend) {
+        int newId = getFreeId();
+        friend.setId(newId);
+        friends.add(friend);
     }
 
     /**
      * Updates the information of an existing friend in the database.
      *
-     * @param oldFriend The friend with the old information.
+     * @param id       The ID of the friend to be updated.
      * @param newFriend The friend with the updated information.
      * @return True if the update was successful, false otherwise.
      */
-    public boolean updateFriend(Friend oldFriend, Friend newFriend) {
-        if (friends.contains(oldFriend)) {
-            int index = friends.indexOf(oldFriend);
-            newFriend.setId(oldFriend.getId());
-            friends.set(index, newFriend);
-            return true;
+    public boolean updateFriend(int id, Friend newFriend) {
+        for (int i = 0; i < friends.size(); i++) {
+            Friend existingFriend = friends.get(i);
+            if (existingFriend.getId() == id) {
+                newFriend.setId(id);
+                friends.set(i, newFriend);
+                return true;
+            }
         }
         return false;
     }
@@ -108,9 +76,40 @@ public class FriendDatabase {
      * @param id The ID of the friend to be removed.
      * @return True if the friend was successfully removed, false otherwise.
      */
-    public boolean removeFriendById(int id) {
-        Friend friendToRemove = findFriendById(id);
-        return friendToRemove != null && friends.remove(friendToRemove);
+    public boolean removeFriend(int id) {
+        Iterator<Friend> iterator = friends.iterator();
+        while (iterator.hasNext()) {
+            Friend friend = iterator.next();
+            if (friend.getId() == id) {
+                iterator.remove();
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Finds and returns a friend with the specified ID.
+     *
+     * @param id The ID of the friend to find.
+     * @return The found friend or null if not found.
+     */
+    public Friend findFriend(int id) {
+        for (Friend friend : friends) {
+            if (friend.getId() == id) {
+                return friend;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Gets a list of all friends in the database.
+     *
+     * @return List of friends.
+     */
+    public List<Friend> getAllFriends() {
+        return new ArrayList<>(friends);
     }
 
     /**
@@ -138,7 +137,7 @@ public class FriendDatabase {
      * @param fileName Name of the file from which to read the data.
      * @return List of friends read from the file.
      */
-    public List<Friend> readFriendsFromBinaryFile(String fileName) {
+    public List<Friend> readFromBinaryFile(String fileName) {
         friends.clear();
         try (InputStream is = getClass().getClassLoader().getResourceAsStream("resources/data/" + fileName);
              ObjectInputStream ois = new ObjectInputStream(is)) {
@@ -165,7 +164,7 @@ public class FriendDatabase {
      * @param fileName Name of the file to which to write the data.
      * @return True if the write was successful, false otherwise.
      */
-    public boolean writeFriendsToBinaryFile(String fileName) {
+    public boolean writeToBinaryFile(String fileName) {
         try (OutputStream os = new FileOutputStream("resources/data/" + fileName);
              ObjectOutputStream oos = new ObjectOutputStream(os)) {
             oos.writeInt(friends.size());  // Write the number of friends

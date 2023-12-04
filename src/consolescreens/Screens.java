@@ -1,98 +1,62 @@
 package consolescreens;
 
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 
+import calendar.CalendarManager;
+import calendar.Event;
 import friendshipdb.FriendDatabase;
 import friendshipdb.Friend;
+
+import greetings.GreetingsGenerator;
 
 
 public class Screens {
 
-    public class ConsoleUtils {
+    protected Scanner userInput;
 
-        public static void clearConsole() {
-            try {
-                new ProcessBuilder("cmd", "/c", "cls").inheritIO().start().waitFor();
-            } catch (Exception e) {
-                System.out.println("Error clearing the console: " + e.getMessage());
-            }
-        }
-
-    }
-
-    public void displayMenu() {
-
-        Scanner user_inp = new Scanner(System.in);
-        
-        DatabaseScreen dbScreen = new DatabaseScreen();
-        FriendsScreen friendsScreen = new FriendsScreen();
-        
-        do {
-
-            ConsoleUtils.clearConsole();
-            System.out.println("\"Version info . . .\"");
-            System.out.println("===========================================");
-            System.out.println("1. Database");
-            //System.out.println("2. Friends Database");
-            System.out.println("3. Calendar     (no implement)");
-            System.out.println("4. Gifts        (no implement)");
-            System.out.println("5. Export       (no implement)");
-            System.out.println("6. Log          (no implement)");
-            System.out.println("7. Settings     (no implement)");
-            System.out.println("");
-            System.out.println("0. Terminate program");
-            System.out.println("===========================================");
-
-            int choice = user_inp.nextInt();
-            switch (choice) {
-
-                case 1:
-                    dbScreen.displayMenu(user_inp, friendsScreen);
-
-                case 2:
-
-                case 3:
-
-                case 4:
-
-                case 5:
-                    // Виклик методу виведення меню
-                    // Тут ви можете вивести меню бази даних, налаштувань і т. д.
-                    break;
-
-                case 0:
-                    System.out.println("Please, wait program to end");
-                    user_inp.close();
-                    // Adding a delay of 1.5 seconds (1500 milliseconds)
-                    try {
-                        Thread.sleep(1500);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();  // Handle the exception if needed
-                    }
-                    // Можливо, ви хочете викликати метод для автоматичного відправлення писем тут
-                    ConsoleUtils.clearConsole();
-                    System.exit(0);
-                    break;
-
-                default:
-                    System.out.println("No such option provided. Try again");
-                    // Adding a delay of 1.5 seconds (1500 milliseconds)
-                    try {
-                        Thread.sleep(1500);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();  // Handle the exception if needed
-                    }
-
-            }
-            
-        } while (true);        
-        
-    }
-
-
-    public class DatabaseScreen {
+    protected DatabaseScreen dbScreen;
+    protected FriendsScreen friendsScreen;
+    protected CalendarScreen calendarScreen;
     
-        public void displayMenu(Scanner user_inp, FriendsScreen friendsScreen) {
+    //greetings screen
+
+    protected FriendDatabase friendDb;
+    protected String friendDbDataFileName = "friendDb.db";
+
+    protected CalendarManager calendarDb;
+    protected String calendarDbDataFileName = "calendarDb.db";
+
+    protected GreetingsGenerator greetingsGenerator;
+
+    
+
+    public Screens(Scanner userInput) {
+
+        this.userInput = userInput;
+
+        this.friendDb = new FriendDatabase();
+        friendDb.readFromBinaryFile(friendDbDataFileName);
+
+        this.calendarDb = new CalendarManager(friendDb);
+        calendarDb.readFromBinaryFile(calendarDbDataFileName);
+
+        this.greetingsGenerator = new GreetingsGenerator();
+
+        this.dbScreen = new DatabaseScreen();
+        this.friendsScreen = new FriendsScreen();
+        this.calendarScreen = new CalendarScreen();
+
+    }
+
+
+    private class DatabaseScreen {
+
+        private DatabaseScreen() {}
+    
+        public void display() {
     
              do {
     
@@ -100,7 +64,7 @@ public class Screens {
                 System.out.println("Database options");
                 System.out.println("===========================================");
                 System.out.println("1. Friends");
-                System.out.println("2. Calendar     (no implement yet)");
+                System.out.println("2. Calendar");
                 System.out.println("3. Export       (no implement yet)");
                 System.out.println("4. Log          (no implement yet)");
                 System.out.println("5. Settings     (no implement yet)");
@@ -108,36 +72,23 @@ public class Screens {
                 System.out.println("0. Main menu");
                 System.out.println("===========================================");
     
-                int choice = user_inp.nextInt();
+                int choice = userInput.nextInt();
                 switch (choice) {
     
                     case 1:
-                        // Виклик методу перевірки писем
-                        // Можливо, вам потрібно створити окремий клас для цього
-                        friendsScreen.displayMenu(user_inp);
+                        friendsScreen.display();
+                        continue;
     
                     case 2:
-    
-                    case 3:
-    
-                    case 4:
-    
-                    case 5:
-                        // Виклик методу виведення меню
-                        // Тут ви можете вивести меню бази даних, налаштувань і т. д.
-                        break;
+                        calendarScreen.display();
+                        continue;
     
                     case 0:
                         return;
     
                     default:
                         System.out.println("No such option provided. Try again");
-                        // Adding a delay of 1.5 seconds (1500 milliseconds)
-                        try {
-                            Thread.sleep(1500);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();  // Handle the exception if needed
-                        }
+                        ConsoleUtils.delayConsole(1500);
     
                 }
                 
@@ -147,19 +98,18 @@ public class Screens {
     
     }
 
-    public class FriendsScreen {
 
-        public void displayMenu(Scanner user_inp) {
+    private class FriendsScreen {
 
-            FriendDatabase friendDb = new FriendDatabase();
-            String friendDbDataFileName = "friendDb.db";
-            friendDb.readFriendsFromBinaryFile(friendDbDataFileName);
+        private boolean friendDbVisible = false;
+        private int friendDbPage = 1;
+        private int friendDbViewStartIndex = 0;
+        private int friendDbViewEndIndex = 9 < friendDb
+                .getFriendSize() ? 9 : friendDb.getFriendSize();
 
-            boolean friendDbVisible = false;
-            int friendDbPage = 1;
-            int friendDbViewStartIndex = 0;
-            int friendDbViewEndIndex = 9 < friendDb
-                    .getFriendSize() ? 9 : friendDb.getFriendSize();
+        public FriendsScreen() {}
+
+        public void display() {
     
             do {
     
@@ -192,151 +142,34 @@ public class Screens {
                 System.out.println("0. Return");
                 System.out.println("===========================================");
     
-                int choice = user_inp.nextInt();
+                int choice = userInput.nextInt();
                 switch (choice) {
     
                     case 1:
-                        if (friendDbVisible){
-                            friendDbVisible = false;
-                        } else {
-                            friendDbVisible = true;
-                        }
-                        continue;
-                        
+                        option1();
+                        continue;                        
     
                     case 2:
-                        ConsoleUtils.clearConsole();
-                        System.out.println("Add a new friend");
-                        System.out.println("===========================================");
-
-                        System.out.print("Enter first name: ");
-                        String firstName2 = user_inp.next();
-                        System.out.print("Enter last name: ");
-                        String lastName2 = user_inp.next();
-                        System.out.print("Enter contact number: ");
-                        String contactNumber2 = user_inp.next();
-                        System.out.print("Enter email: ");
-                        String email2 = user_inp.next();
-                        System.out.print("Enter website: ");
-                        String website2 = user_inp.next();
-
-                        friendshipdb.Friend newFriend = new Friend(friendDb.getFreeId(), firstName2, lastName2, contactNumber2, email2, website2);
-                        friendDb.addFriend(newFriend);
-                        friendDb.writeFriendsToBinaryFile(friendDbDataFileName);
-                        System.out.println("Friend added successfully! Friend ID: " + newFriend.getId());
-                        // Adding a delay of 1.5 seconds (1500 milliseconds)
-                        try {
-                            Thread.sleep(1500);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();  // Handle the exception if needed
-                        }
+                        option2();
                         continue;
     
                     case 3:
-                        ConsoleUtils.clearConsole();
-                        if (friendDbVisible){
-                            System.out.println("===========================================");
-                            System.out.println("Page " + friendDbPage);
-                            System.out.println(friendDb.toString(friendDbViewStartIndex, friendDbViewEndIndex));
-                            System.out.println("===========================================");
-                            System.out.println("");
-                        }
-                        
-                        System.out.println("Edit friend");
-                        System.out.println("===========================================");
-                    
-                        System.out.print("Enter ID: ");
-                        int id3 = user_inp.nextInt();
-
-                        Friend friendToEdit = friendDb.findFriendById(id3);
-                        if (friendToEdit != null) {
-                            System.out.print("Enter first name: ");
-                            friendToEdit.setFirstName(user_inp.next());
-                            System.out.print("Enter last name: ");
-                            friendToEdit.setLastName(user_inp.next());
-                            System.out.print("Enter contact number: ");
-                            friendToEdit.setContactNumber(user_inp.next());
-                            System.out.print("Enter email: ");
-                            friendToEdit.setEmail(user_inp.next());
-                            System.out.print("Enter website: ");
-                            friendToEdit.setWebsite(user_inp.next());
-
-                            friendDb.updateFriend(friendDb.findFriendById(id3), friendToEdit);
-                            friendDb.writeFriendsToBinaryFile(friendDbDataFileName);
-                    
-                            System.out.println("Friend updated successfully!");
-
-                        } else {
-                            System.out.println("Friend not found with ID: " + id3);
-                        }
-                        // Adding a delay of 1.5 seconds (1500 milliseconds)
-                        try {
-                            Thread.sleep(1500);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();  // Handle the exception if needed
-                        }
+                        option3();
                         continue;
     
                     case 4:
-                        ConsoleUtils.clearConsole();
-                        if (friendDbVisible){
-                            System.out.println("===========================================");
-                            System.out.println("Page " + friendDbPage);
-                            System.out.println(friendDb.toString(friendDbViewStartIndex, friendDbViewEndIndex));
-                            System.out.println("===========================================");
-                            System.out.println("");
-                        }
-
-                        System.out.println("Remove friend");
-                        System.out.println("===========================================");
-                    
-                        System.out.print("Enter ID: ");
-                        int id4 = user_inp.nextInt();
-                    
-                        Friend friendToRemove = friendDb.findFriendById(id4);
-                        if (friendToRemove != null) {
-                            friendDb.removeFriend(friendToRemove);
-                            friendDb.writeFriendsToBinaryFile(friendDbDataFileName);
-                    
-                            System.out.println("Friend removed successfully!");
-                        } else {
-                            System.out.println("Friend not found with ID: " + id4);
-                        }
-                        // Adding a delay of 1.5 seconds (1500 milliseconds)
-                        try {
-                            Thread.sleep(1500);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();  // Handle the exception if needed
-                        }
+                        option4();
                         continue;
                     
     
                     case 5:
     
                     case 8:
-                        if (friendDbViewStartIndex - 10 >= 0) {
-                            friendDbViewStartIndex -= 10;
-                            if (friendDbViewEndIndex == friendDb.getFriendSize() - 1){
-                                friendDbViewEndIndex = ((friendDbPage - 1)* 10) - 1;
-                            } else {
-                                friendDbViewEndIndex -= 10;
-                            }
-                            friendDbPage--;
-                        }
+                        option8();
                         continue;
                         
                     case 9:
-                        if (friendDbViewEndIndex + 10 < friendDb.getFriendSize() - 1) {
-                            friendDbViewEndIndex += 10;
-                            friendDbViewStartIndex += 10;
-                            friendDbPage++;
-                        } else if (friendDbViewEndIndex == friendDb.getFriendSize() - 1){
-                            continue;
-                        } else {
-                            friendDbViewEndIndex = friendDb.getFriendSize() - 1;
-                            friendDbViewStartIndex += 10;
-                            friendDbPage++;
-                        }
+                        option9();
                         continue;
                     
                     case 0:
@@ -345,11 +178,7 @@ public class Screens {
                     default:
                         System.out.println("No such option provided. Try again");
                         // Adding a delay of 1.5 seconds (1500 milliseconds)
-                        try {
-                            Thread.sleep(1500);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();  // Handle the exception if needed
-                        }
+                        ConsoleUtils.delayConsole(1500);
                         
                 }
                 
@@ -357,5 +186,528 @@ public class Screens {
     
         }
     
+        private void option1(){
+            if (friendDbVisible){
+                friendDbVisible = false;
+            } else {
+                friendDbVisible = true;
+            }
+        }
+
+        private void option2() {
+            ConsoleUtils.clearConsole();
+            System.out.println("Add a new friend");
+            System.out.println("===========================================");
+        
+            System.out.print("Enter first name: ");
+            String firstName2 = userInput.next();
+            System.out.print("Enter last name: ");
+            String lastName2 = userInput.next();
+            System.out.print("Enter contact number: ");
+            String contactNumber2 = userInput.next();
+            System.out.print("Enter email: ");
+            String email2 = userInput.next();
+            System.out.print("Enter website: ");
+            String website2 = userInput.next();
+            System.out.print("Enter middle name: ");
+            String middleName2 = userInput.next();
+            System.out.print("Enter gender (Male/Female): ");
+            String gender2 = userInput.next();
+            System.out.print("Enter age: ");
+            int age2 = userInput.nextInt();
+            System.out.print("Enter zodiac sign: ");
+            String zodiacSign2 = userInput.next();
+
+            friendshipdb.Friend newFriend = new Friend(0, firstName2, lastName2, middleName2,
+            contactNumber2, email2, website2, gender2, age2, zodiacSign2);
+
+            friendDb.addFriend(newFriend);
+            friendDb.writeToBinaryFile(friendDbDataFileName);
+            System.out.println("Friend added successfully! Friend ID: " + newFriend.getId());
+            ConsoleUtils.delayConsole(1500);
+        }
+
+        private void option3(){
+            ConsoleUtils.clearConsole();
+            if (friendDbVisible) {
+                System.out.println("===========================================");
+                System.out.println("Page " + friendDbPage);
+                System.out.println(friendDb.toString(friendDbViewStartIndex, friendDbViewEndIndex));
+                System.out.println("===========================================");
+                System.out.println("");
+            }
+        
+            System.out.println("Edit friend");
+            System.out.println("===========================================");
+        
+            System.out.print("Enter ID: ");
+            int id3 = userInput.nextInt();
+        
+            Friend friendToEdit = friendDb.findFriend(id3);
+            if (friendToEdit != null) {
+                System.out.print("Enter first name: ");
+                friendToEdit.setFirstName(userInput.next());
+                System.out.print("Enter last name: ");
+                friendToEdit.setLastName(userInput.next());
+                System.out.print("Enter contact number: ");
+                friendToEdit.setContactNumber(userInput.next());
+                System.out.print("Enter email: ");
+                friendToEdit.setEmail(userInput.next());
+                System.out.print("Enter website: ");
+                friendToEdit.setWebsite(userInput.next());
+                System.out.print("Enter middle name: ");
+                friendToEdit.setMiddleName(userInput.next());
+                System.out.print("Enter gender (Male/Female): ");
+                friendToEdit.setGender(userInput.next());
+                System.out.print("Enter age: ");
+                friendToEdit.setAge(userInput.nextInt());
+                System.out.print("Enter zodiac sign: ");
+                friendToEdit.setZodiacSign(userInput.next());
+            
+                friendDb.updateFriend(id3, friendToEdit);
+                friendDb.writeToBinaryFile(friendDbDataFileName);
+            
+                System.out.println("Friend updated successfully!");
+            } else {
+                System.out.println("Friend not found with ID: " + id3);
+            }
+            ConsoleUtils.delayConsole(1500);
+        }
+
+        private void option4(){
+            ConsoleUtils.clearConsole();
+            if (friendDbVisible){
+                System.out.println("===========================================");
+                System.out.println("Page " + friendDbPage);
+                System.out.println(friendDb.toString(friendDbViewStartIndex, friendDbViewEndIndex));
+                System.out.println("===========================================");
+                System.out.println("");
+            }
+
+            System.out.println("Remove friend");
+            System.out.println("===========================================");
+            
+            System.out.print("Enter ID: ");
+            int id4 = userInput.nextInt();
+            
+            boolean removed = friendDb.removeFriend(id4);
+            if (removed) {
+                System.out.println("Friend removed successfully!");
+            } else {
+                System.out.println("Friend not found with ID: " + id4);
+            }
+            // Adding a delay of 1.5 seconds (1500 milliseconds)
+            ConsoleUtils.delayConsole(1500);
+        }
+
+        // more options must be placed here
+
+        private void option8(){
+            if (friendDbViewStartIndex - 10 >= 0) {
+                friendDbViewStartIndex -= 10;
+                if (friendDbViewEndIndex == friendDb.getFriendSize() - 1){
+                    friendDbViewEndIndex = ((friendDbPage - 1)* 10) - 1;
+                } else {
+                    friendDbViewEndIndex -= 10;
+                }
+                friendDbPage--;
+            }
+        }
+
+        private void option9(){
+            if (friendDbViewEndIndex + 10 < friendDb.getFriendSize() - 1) {
+                friendDbViewEndIndex += 10;
+                friendDbViewStartIndex += 10;
+                friendDbPage++;
+            } else if (friendDbViewEndIndex == friendDb.getFriendSize() - 1){
+                // Do nothing
+            } else {
+                friendDbViewEndIndex = friendDb.getFriendSize() - 1;
+                friendDbViewStartIndex += 10;
+                friendDbPage++;
+            }
+        }
+
     }
+
+
+    private class CalendarScreen {
+
+        private boolean calendarDbVisible = false;
+        private int calendarDbPage = 1;
+        private int calendarDbViewStartIndex = 0;
+        private int calendarDbViewEndIndex = 9 < calendarDb
+                .getEventsSize() ? 9 : calendarDb.getEventsSize();
+
+        public CalendarScreen() {}
+
+        public void display() {
+    
+            do {
+    
+                ConsoleUtils.clearConsole();
+                System.out.println("Events options");
+                System.out.println("===========================================");
+
+                if (calendarDbVisible){
+                    System.out.println("Page " + calendarDbPage);
+                    System.out.println(calendarDb.toString(calendarDbViewStartIndex, calendarDbViewEndIndex));
+                    System.out.println("===========================================");
+                    System.out.println("1. Hide events");
+                } else {
+                    System.out.println("1. Show events");
+                }
+
+                System.out.println("2. Add event");
+                System.out.println("3. Edit event");
+                System.out.println("4. Remove event");
+                System.out.println("5. Settings             (no implement yet)");
+                System.out.println("");
+                if (calendarDbVisible && calendarDbViewStartIndex != 0){
+                    System.out.println("8. Prev. page");
+                }
+                if (calendarDbVisible && calendarDbViewEndIndex < calendarDb.getEventsSize() - 1){
+                    System.out.println("9. Next page");
+                }
+                
+                System.out.println("");
+                System.out.println("0. Return");
+                System.out.println("===========================================");
+    
+                int choice = userInput.nextInt();
+                switch (choice) {
+    
+                    case 1:
+                        option1();
+                        continue;                        
+    
+                    case 2:
+                        option2();
+                        continue;
+    
+                    case 3:
+                        option3();
+                        continue;
+    
+                    case 4:
+                        option4();
+                        continue;
+                    
+    
+                    case 5:
+    
+                    case 8:
+                        option8();
+                        continue;
+                        
+                    case 9:
+                        option9();
+                        continue;
+                    
+                    case 0:
+                        return;
+    
+                    default:
+                        System.out.println("No such option provided. Try again");
+                        ConsoleUtils.delayConsole(1500);
+                        
+                }
+                
+            } while (true);
+    
+        }
+
+        private void option1(){
+            if (calendarDbVisible){
+                calendarDbVisible = false;
+            } else {
+                calendarDbVisible = true;
+            }
+        }
+
+        private void option2() {
+            ConsoleUtils.clearConsole();
+            if (calendarDbVisible) {
+                System.out.println("===========================================");
+                System.out.println("Page " + calendarDbPage);
+                System.out.println(calendarDb.toString(calendarDbViewStartIndex, calendarDbViewEndIndex));
+                System.out.println("===========================================");
+                System.out.println("");
+            }
+            System.out.println("Add a new event");
+            System.out.println("===========================================");
+
+            System.out.println("Enter friend ID: ");
+            int friendId = userInput.nextInt();
+
+            Friend friend = friendDb.findFriend(friendId);
+            if (friend != null) {
+
+                System.out.println("Friend found: " + friend);
+                System.out.println("===========================================");
+                System.out.println("1. Confirm");
+                System.out.println("0. Cancel");
+                int confirmation = userInput.nextInt();
+
+                switch (confirmation) {
+
+                    case 1:
+                    System.out.println("===========================================");
+                    System.out.print("Enter event name: ");
+                    String eventName = userInput.next();
+                    System.out.print("Enter event date (YYYY-MM-DD): ");
+                    String dateString = userInput.next();
+                    LocalDate eventDate = LocalDate.parse(dateString);
+                    System.out.print("Enter event occasion (\"birthday\", \"anniversary\", \"general\"): ");
+                    String eventOccasion = userInput.next();
+
+                    Event newEvent = new Event(friendId, eventName, eventDate, eventOccasion);
+
+                    calendarDb.addEvent(friendId, newEvent);
+                    calendarDb.writeToBinaryFile(calendarDbDataFileName);
+                    System.out.println("===========================================");
+                    System.out.println("Event added successfully! Event ID: " + newEvent.getFriendId());
+
+                    default:
+                        System.out.println("Event addition canceled.");
+
+                }
+
+            } else {
+                System.out.println("Friend not found with ID: " + friendId);
+            }
+            System.out.println("Press Enter to continue");
+            userInput.nextLine();
+        }
+
+        private void option3(){
+            ConsoleUtils.clearConsole();
+            if (calendarDbVisible) {
+                System.out.println("===========================================");
+                System.out.println("Page " + calendarDbPage);
+                System.out.println(calendarDb.toString(calendarDbViewStartIndex, calendarDbViewEndIndex));
+                System.out.println("===========================================");
+                System.out.println("");
+            }
+        
+            System.out.println("Edit event");
+            System.out.println("===========================================");
+        
+            System.out.print("Enter friend ID: ");
+            int friendId3 = userInput.nextInt();
+            System.out.print("Enter event ID: ");
+            int eventIndex = userInput.nextInt();
+            System.out.println("===========================================");
+            Event existingEvent = calendarDb.getEvent(friendId3, eventIndex);
+            if (existingEvent != null) {
+                // Display existing event details
+                System.out.println("Existing Event Details:");
+                System.out.println(existingEvent);
+                System.out.println("===========================================");
+                System.out.print("Enter event name (Don't use whitespaces): ");
+                String eventName = userInput.next();
+        
+                System.out.print("Enter event date (YYYY-MM-DD): ");
+                String dateString = userInput.next();
+                LocalDate eventDate = LocalDate.parse(dateString);
+                System.out.print("Enter event occasion (\"birthday\", \"anniversary\", \"general\"): ");
+                String eventOccasion = userInput.next();
+        
+                // Create updated event
+                Event updatedEvent = new Event(friendId3, eventName, eventDate, eventOccasion);
+                // Update the event in the calendar
+                if (calendarDb.updateEvent(friendId3, eventIndex, updatedEvent)) {
+                    calendarDb.writeToBinaryFile(calendarDbDataFileName);
+                    System.out.println("===========================================");
+                    System.out.println("Event updated successfully!");
+                    ConsoleUtils.delayConsole(2000);
+                } else {
+                    System.out.println("Failed to update event. Friend ID or index might be invalid.");
+                }
+            } else {
+                System.out.println("Event not found with Friend ID: " + friendId3 + " and Index: " + eventIndex);
+            }
+
+        }
+
+        private void option4(){
+            ConsoleUtils.clearConsole();
+            if (calendarDbVisible){
+                System.out.println("===========================================");
+                System.out.println("Page " + calendarDbPage);
+                System.out.println(calendarDb.toString(calendarDbViewStartIndex, calendarDbViewEndIndex));
+                System.out.println("===========================================");
+                System.out.println("");
+            }
+
+            System.out.println("Remove event");
+            System.out.println("===========================================");
+            
+            System.out.print("Enter friend ID: ");
+            int friendId4 = userInput.nextInt();
+            System.out.print("Enter event ID: ");
+            int eventIndex = userInput.nextInt();
+            
+            boolean removed = calendarDb.removeEvent(friendId4, eventIndex);
+            if (removed) {
+                System.out.println("===========================================");
+                System.out.println("Event removed successfully!");
+            } else {
+                System.out.println("Event not found with ID: " + friendId4);
+            }
+            ConsoleUtils.delayConsole(1500);
+        }
+
+        // more options must be placed here
+
+        private void option8(){
+            if (calendarDbViewStartIndex - 10 >= 0) {
+                calendarDbViewStartIndex -= 10;
+                if (calendarDbViewEndIndex == calendarDb.getEventsSize() - 1){
+                    calendarDbViewEndIndex = ((calendarDbPage - 1)* 10) - 1;
+                } else {
+                    calendarDbViewEndIndex -= 10;
+                }
+                calendarDbPage--;
+            }
+        }
+
+        private void option9(){
+            if (calendarDbViewEndIndex + 10 < calendarDb.getEventsSize() - 1) {
+                calendarDbViewEndIndex += 10;
+                calendarDbViewStartIndex += 10;
+                calendarDbPage++;
+            } else if (calendarDbViewEndIndex == calendarDb.getEventsSize() - 1){
+                // Do nothing
+            } else {
+                calendarDbViewEndIndex = calendarDb.getEventsSize() - 1;
+                calendarDbViewStartIndex += 10;
+                calendarDbPage++;
+            }
+        }
+
+
+    }
+
+
+    public class ConsoleUtils {
+
+        protected static void clearConsole() {
+            try {
+                new ProcessBuilder("cmd", "/c", "cls").inheritIO().start().waitFor();
+            } catch (Exception e) {
+                System.out.println("Error clearing the console: " + e.getMessage());
+            }
+        }
+
+        protected static void delayConsole(int time){
+            try {
+                Thread.sleep(time);
+            } catch (InterruptedException e) {
+                e.printStackTrace();  // Handle the exception if needed
+            }
+        }
+
+    }
+
+
+    public void display() {
+        
+        do {
+
+            ConsoleUtils.clearConsole();
+            System.out.println("\"Version info: 0.0.2\"");
+            System.out.println("===========================================");
+            System.out.println("1. Database");
+            System.out.println("2. Export       (no implement)");
+            System.out.println("3. Log          (no implement)");
+            System.out.println("4. Settings     (no implement)");
+            System.out.println("");
+            System.out.println("0. Terminate program");
+            System.out.println("===========================================");
+
+            int choice = userInput.nextInt();
+            switch (choice) {
+
+                case 1:
+                    dbScreen.display();
+                    continue;
+
+                case 0:
+                    System.out.println("Please, wait program to end");
+                    userInput.close();
+                    ConsoleUtils.delayConsole(1500);
+                    // Можливо викликати метод для автоматичного відправлення писем тут
+                    ConsoleUtils.clearConsole();
+                    System.exit(0);
+                    break;
+
+                default:
+                    System.out.println("No such option provided. Try again");
+                    ConsoleUtils.delayConsole(1500);
+
+            }
+            
+        } while (true);        
+        
+    }
+
+    // 
+    private LocalDate today = LocalDate.now();
+    private List<Event> eventsToday = calendarDb.findEventsByDate(today);
+    private List<Friend> friendsToCongratulate = new ArrayList<>();
+
+    /**
+     * Method called at the beginning of the program execution.
+     * Checks for events today and prompts for greetings generation.
+     */
+    public void pushUpSuggestion() {
+
+        if (!eventsToday.isEmpty()) {
+
+            ConsoleUtils.clearConsole();
+            System.out.println("Today's Events:");
+            System.out.println("===========================================");
+            for (Event event : eventsToday) {
+                Friend friend = friendDb.findFriend(event.getFriendId());
+                friendsToCongratulate.add(friend);
+                System.out.println(friend);
+                System.out.println("    Event" + event);
+            }
+
+            System.out.println("===========================================");
+            System.out.println("Do you want to generate greetings right now? (Y/N):");
+            String response = userInput.next();
+            if (response.equals("Y")) {
+
+                System.out.println("===========================================");
+                System.out.println("Proceeding...");
+                List<String> greetings = greetingsGenerator.generateGreetings(eventsToday, friendsToCongratulate);
+                if (greetings != null) {
+                    System.out.println("Greetings successfully generated!");
+                } else {
+                    System.out.println("Something gone wrong...");
+                }
+                // for (String str : greetings) {
+                //     System.out.println(str);
+                // }
+
+                userInput.next();
+            } else {
+                System.out.println("Greetings will be automatically generated and sent at the end of the program");
+                return;
+            }
+
+        }
+
+    }
+
+    private void suggestionMenu() {
+
+    }
+
+    public class SuggestionScreen {
+
+    }
+
 }
