@@ -23,7 +23,7 @@ public class Screens {
     protected FriendsScreen friendsScreen;
     protected CalendarScreen calendarScreen;
     
-    //greetings screen
+    // TODO greetings screen
 
     protected FriendDatabase friendDb;
     protected String friendDbDataFileName;
@@ -85,9 +85,9 @@ public class Screens {
                 System.out.println("===========================================");
                 System.out.println("1. Friends");
                 System.out.println("2. Calendar");
-                System.out.println("3. Export       (no implement yet)");
-                System.out.println("4. Log          (no implement yet)");
-                System.out.println("5. Settings     (no implement yet)");
+                // System.out.println("3. Export       (no implement yet)");
+                // System.out.println("4. Log          (no implement yet)");
+                // System.out.println("5. Settings     (no implement yet)");
                 System.out.println("");
                 System.out.println("0. Main menu");
                 System.out.println("===========================================");
@@ -149,7 +149,7 @@ public class Screens {
                 System.out.println("2. Add friend");
                 System.out.println("3. Edit friend");
                 System.out.println("4. Remove friend");
-                System.out.println("5. Settings             (no implement yet)");
+                //System.out.println("5. Settings             (no implement yet)");
                 System.out.println("");
                 if (friendDbVisible && friendDbViewStartIndex != 0){
                     System.out.println("8. Prev. page");
@@ -223,18 +223,18 @@ public class Screens {
             String firstName2 = userInput.next();
             System.out.print("Enter last name: ");
             String lastName2 = userInput.next();
-            System.out.print("Enter contact number: ");
-            String contactNumber2 = userInput.next();
-            System.out.print("Enter email: ");
-            String email2 = userInput.next();
-            System.out.print("Enter website: ");
-            String website2 = userInput.next();
             System.out.print("Enter middle name: ");
             String middleName2 = userInput.next();
+            System.out.print("Enter email: ");
+            String email2 = userInput.next();
             System.out.print("Enter gender (Male/Female): ");
             String gender2 = userInput.next();
             System.out.print("Enter age: ");
             int age2 = userInput.nextInt();
+            System.out.print("Enter contact number: ");
+            String contactNumber2 = userInput.next();
+            System.out.print("Enter website: ");
+            String website2 = userInput.next();
             System.out.print("Enter zodiac sign: ");
             String zodiacSign2 = userInput.next();
 
@@ -269,18 +269,18 @@ public class Screens {
                 friendToEdit.setFirstName(userInput.next());
                 System.out.print("Enter last name: ");
                 friendToEdit.setLastName(userInput.next());
-                System.out.print("Enter contact number: ");
-                friendToEdit.setContactNumber(userInput.next());
-                System.out.print("Enter email: ");
-                friendToEdit.setEmail(userInput.next());
-                System.out.print("Enter website: ");
-                friendToEdit.setWebsite(userInput.next());
                 System.out.print("Enter middle name: ");
                 friendToEdit.setMiddleName(userInput.next());
+                System.out.print("Enter email: ");
+                friendToEdit.setEmail(userInput.next());
                 System.out.print("Enter gender (Male/Female): ");
                 friendToEdit.setGender(userInput.next());
                 System.out.print("Enter age: ");
                 friendToEdit.setAge(userInput.nextInt());
+                System.out.print("Enter contact number: ");
+                friendToEdit.setContactNumber(userInput.next());
+                System.out.print("Enter website: ");
+                friendToEdit.setWebsite(userInput.next());
                 System.out.print("Enter zodiac sign: ");
                 friendToEdit.setZodiacSign(userInput.next());
             
@@ -381,7 +381,7 @@ public class Screens {
                 System.out.println("2. Add event");
                 System.out.println("3. Edit event");
                 System.out.println("4. Remove event");
-                System.out.println("5. Settings             (no implement yet)");
+                //System.out.println("5. Settings             (no implement yet)");
                 System.out.println("");
                 if (calendarDbVisible && calendarDbViewStartIndex != 0){
                     System.out.println("8. Prev. page");
@@ -639,9 +639,9 @@ public class Screens {
             System.out.println("\"Version info: 0.0.2\"");
             System.out.println("===========================================");
             System.out.println("1. Database");
-            System.out.println("2. Export       (no implement)");
-            System.out.println("3. Log          (no implement)");
-            System.out.println("4. Settings     (no implement)");
+            // System.out.println("2. Export       (no implement)");
+            // System.out.println("3. Log          (no implement)");
+            // System.out.println("4. Settings     (no implement)");
             System.out.println("");
             System.out.println("0. Terminate program");
             System.out.println("===========================================");

@@ -40,8 +40,7 @@ public class GreetingsGenerator {
 
     private String ChatGPTAPI(String prompt) {
         String urlToOpenai = "https://api.openai.com/v1/chat/completions";
-        // The clear account is used, no worries this time
-        String apiKey = "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";
+        String apiKey = "OPEN_AI_API_KEY";
         String model = "gpt-3.5-turbo";
 
         try {
@@ -102,7 +101,7 @@ public class GreetingsGenerator {
      * @return Generated greeting.
      */
     public String generateGreeting(String friendInfo, String eventInfo) {
-        String promptString = "Don't use any formating symbols. Don't assign author name. Assume the occasion. Generate a greeting for the friend based on: Friend Info: " + friendInfo + "\n" + "Event Info: " + eventInfo + "\n";
+        String promptString = "Don't use any formating symbols. Don't assign author name. Assume the occasion. Generate a greeting for the friend based on: Friend Info: " + friendInfo + "Event Info: " + eventInfo;
         
         return ChatGPTAPI(promptString);
     }
