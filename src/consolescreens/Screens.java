@@ -2,6 +2,7 @@ package consolescreens;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Scanner;
 
@@ -11,6 +12,7 @@ import friendshipdb.FriendDatabase;
 import friendshipdb.Friend;
 
 import greetings.GreetingsGenerator;
+import mailer.EmailSender;
 
 
 public class Screens {
@@ -24,30 +26,48 @@ public class Screens {
     //greetings screen
 
     protected FriendDatabase friendDb;
-    protected String friendDbDataFileName = "friendDb.db";
+    protected String friendDbDataFileName;
 
     protected CalendarManager calendarDb;
-    protected String calendarDbDataFileName = "calendarDb.db";
+    protected String calendarDbDataFileName;
 
     protected GreetingsGenerator greetingsGenerator;
 
-    
+    protected EmailSender emailSender;
 
-    public Screens(Scanner userInput) {
+    // Their data doesn't save
+    private LocalDate today;
+    private List<Event> eventsToday;
+    private List<Friend> friendsToCongratulate;
+    private HashMap <String, String> greetings;
+    private String greetingsStatus;        // "null", "unchecked", "ready", "sent"
+
+
+    public Screens(Scanner userInput, String friendDbDataFileName, String calendarDbDataFileName) {
 
         this.userInput = userInput;
 
         this.friendDb = new FriendDatabase();
+        this.friendDbDataFileName = friendDbDataFileName;
         friendDb.readFromBinaryFile(friendDbDataFileName);
 
         this.calendarDb = new CalendarManager(friendDb);
+        this.calendarDbDataFileName = calendarDbDataFileName;
         calendarDb.readFromBinaryFile(calendarDbDataFileName);
 
         this.greetingsGenerator = new GreetingsGenerator();
 
+        this.emailSender = new EmailSender();
+
         this.dbScreen = new DatabaseScreen();
         this.friendsScreen = new FriendsScreen();
         this.calendarScreen = new CalendarScreen();
+
+        this.today = LocalDate.now();
+        this.eventsToday = calendarDb.findEventsByDate(today);
+        this.friendsToCongratulate = new ArrayList<>();
+        this.greetings = new HashMap<>();
+        this.greetingsStatus = "null";        // "null", "unchecked", "ready", "sent"
 
     }
 
@@ -652,11 +672,6 @@ public class Screens {
         
     }
 
-    // 
-    private LocalDate today = LocalDate.now();
-    private List<Event> eventsToday = calendarDb.findEventsByDate(today);
-    private List<Friend> friendsToCongratulate = new ArrayList<>();
-
     /**
      * Method called at the beginning of the program execution.
      * Checks for events today and prompts for greetings generation.
@@ -682,19 +697,21 @@ public class Screens {
 
                 System.out.println("===========================================");
                 System.out.println("Proceeding...");
-                List<String> greetings = greetingsGenerator.generateGreetings(eventsToday, friendsToCongratulate);
+                greetings = greetingsGenerator.generateGreetings(eventsToday, friendsToCongratulate);
                 if (greetings != null) {
                     System.out.println("Greetings successfully generated!");
+                    greetingsStatus = "unchecked";
+                    ConsoleUtils.delayConsole(3000);
+                    suggestionMenu();
                 } else {
                     System.out.println("Something gone wrong...");
+                    greetingsStatus = "null";
                 }
-                // for (String str : greetings) {
-                //     System.out.println(str);
-                // }
-
                 userInput.next();
+                return;
             } else {
                 System.out.println("Greetings will be automatically generated and sent at the end of the program");
+                greetingsStatus = "null";
                 return;
             }
 
@@ -704,10 +721,76 @@ public class Screens {
 
     private void suggestionMenu() {
 
+        do {
+            ConsoleUtils.clearConsole();
+            System.out.println("");
+            System.out.println("===========================================");
+            System.out.println("1. See greetings");
+            System.out.println("2. Send greetings");
+            System.out.println("");
+            System.out.println("0. Main menu");
+            System.out.println("===========================================");
+
+            int choice = userInput.nextInt();
+            switch (choice) {
+
+                case 1:
+                    for (String str : greetings.keySet()) {
+                        ConsoleUtils.clearConsole();
+                        System.out.println("Greetings");
+                        System.out.println("===========================================");
+                        System.out.println("Reciever " + str + ", message: " + greetings.get(str));
+                        System.out.println("===========================================");
+                        System.out.println("1. Edit");
+                        System.out.println("0. Next");
+                        int choice2 = userInput.nextInt();
+                        if (choice2 == 1) {
+                            System.out.println("Enter new greeting text:");
+                            System.out.println("===========================================");
+                            String newGreetingText = userInput.nextLine();
+                            greetings.put(str, newGreetingText);
+                            System.out.println("Updated. Enter something to continue");
+                            userInput.next();
+                        }
+                    }
+                    greetingsStatus = "ready";
+                    continue;
+
+                case 2:
+                    for (String str : greetings.keySet()) {
+                        emailSender.sendEmail(str, "", greetings.get(str));
+                    }
+                    greetingsStatus = "sent";
+                    System.out.println("Sent successfully!");
+                    ConsoleUtils.delayConsole(3000);
+                    continue;
+
+                case 0:
+                    System.out.println("Greetings will be automatically sent at the end of the program");
+                    greetingsStatus = "ready";
+                    ConsoleUtils.delayConsole(3000);
+                    return;
+
+                default:
+                    System.out.println("No such option provided. Try again");
+                    ConsoleUtils.delayConsole(1500);
+
+            }
+        } while (true);
+
     }
 
-    public class SuggestionScreen {
-
+    public void exitHandle() {
+        if (greetingsStatus == "ready") {
+            for (String str : greetings.keySet()) {
+                emailSender.sendEmail(str, "", greetings.get(str));
+            }
+        } else if (greetingsStatus == "null") {
+            greetings = greetingsGenerator.generateGreetings(eventsToday, friendsToCongratulate);
+            for (String str : greetings.keySet()) {
+                emailSender.sendEmail(str, "", greetings.get(str));
+            }
+        }
     }
 
 }

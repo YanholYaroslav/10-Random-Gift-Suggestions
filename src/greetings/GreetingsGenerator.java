@@ -5,7 +5,6 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLEncoder;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -114,9 +113,9 @@ public class GreetingsGenerator {
      * @param events List of events.
      * @return List of generated greetings.
      */
-    public List<String> generateGreetings(List<Event> events, List<Friend> friends) {
+    public HashMap<String, String> generateGreetings(List<Event> events, List<Friend> friends) {
 
-        List<String> generatedGreetings = new ArrayList<>();
+        HashMap<String, String> generatedGreetings = new HashMap<>();
 
         for (Event event : events) {
 
@@ -124,11 +123,9 @@ public class GreetingsGenerator {
             String friendInfo = friends.get(friendId).toString();
             String eventInfo = event.toString();
 
-            // Generate greeting for the current event
             String greeting = generateGreeting(friendInfo, eventInfo);
 
-            // Add the generated greeting to the list
-            generatedGreetings.add(greeting);
+            generatedGreetings.put(friends.get(friendId).getEmail(), greeting);
         }
 
         return generatedGreetings;
